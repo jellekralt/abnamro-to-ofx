@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const xlsx = require('xlsx');
 const builder = require('xmlbuilder');
 
@@ -53,6 +54,7 @@ function convertExcelToOFX(inputExcelFile) {
   // Map the Excel columns to OFX fields
   transactions.forEach((transaction, index) => {
     const { Transactiebedrag, Omschrijving, Transactiedatum } = transaction;
+    const id = crypto.createHash('md5').update(JSON.stringify(transaction)).digest('hex');
 
     // Extract payee and description from "Omschrijving" field using the dynamic extraction function
     const payee = extractPayee(Omschrijving);
@@ -65,7 +67,7 @@ function convertExcelToOFX(inputExcelFile) {
       .ele('TRNTYPE', Transactiebedrag < 0 ? 'DEBIT' : 'CREDIT').up() // DEBIT for negative amounts, CREDIT for positive
       .ele('DTPOSTED', date).up() // Use formatted date from Transactiedatum
       .ele('TRNAMT', Transactiebedrag).up() // Assuming 'Transactiebedrag' is the amount
-      .ele('FITID', 'T' + index).up() // Unique ID for each transaction
+      .ele('FITID', id).up() // Unique ID for each transaction
       .ele('NAME', payee).up() // Use extracted payee
       .ele('MEMO', description).up() // Full description
     .up();
